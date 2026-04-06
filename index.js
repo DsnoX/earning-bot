@@ -174,28 +174,29 @@ https://t.me/${process.env.BOT_USERNAME}?start=${id}`
   );
 });
 
-// 🔥 FAKE + REAL USER SYSTEM (SAFE)
+// 🔥 FAKE + REAL USER SYSTEM
 
-// fake user count (public ke liye)
-let fakeUsers = 12,483;
+let fakeUsers = 12483; // fake number (change kar sakta hai)
+const adminId = 8413604187; // 👈 apna Telegram ID daal
 
-// 👥 PUBLIC COMMAND (sab ko fake count dikhega)
 bot.onText(/\/stats/, (msg) => {
-  bot.sendMessage(msg.chat.id, `👥 Total Users: ${fakeUsers}+`);
-});
-
-// 🔒 ADMIN REAL USERS (sirf tu dekh sake)
-bot.onText(/\/users/, (msg) => {
   const id = msg.from.id;
+  const realUsers = Object.keys(users).length;
 
-  // ⚠️ yaha apna Telegram ID daal
-  if (id != 8413604187) {
-    return bot.sendMessage(id, "❌ Not allowed");
+  // 👑 AGAR TU (ADMIN)
+  if (id === adminId) {
+    bot.sendMessage(id,
+      `📊 Real Users: ${realUsers}`
+    );
+  } 
+  // 👥 NORMAL USER
+  else {
+    const totalUsers = fakeUsers + realUsers;
+
+    bot.sendMessage(id,
+      `👥 Total Users: ${totalUsers.toLocaleString()}`
+    );
   }
-
-  const totalUsers = Object.keys(users).length;
-
-  bot.sendMessage(id, `👥 Real Users: ${totalUsers}`);
 });
 
 // 🔥 REFER SYSTEM AUTO ₹30 (NO CHANGE NEEDED ABOVE)
