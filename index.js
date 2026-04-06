@@ -197,3 +197,51 @@ bot.onText(/\/users/, (msg) => {
 
   bot.sendMessage(id, `👥 Real Users: ${totalUsers}`);
 });
+
+// 🔥 REFER SYSTEM AUTO ₹30 (NO CHANGE NEEDED ABOVE)
+
+// ensure user exists
+function ensureUser(id) {
+  if (!users[id]) {
+    users[id] = { balance: 0, refs: 0 };
+  }
+}
+
+// 👥 REFER BUTTON
+bot.onText(/👥 Refer & Earn/, (msg) => {
+  const id = msg.from.id;
+  ensureUser(id);
+
+  const refLink = `https://t.me/${process.env.BOT_USERNAME}?start=${id}`;
+
+  bot.sendMessage(id,
+`👥 Refer & Earn
+
+Invite your friends and earn ₹30 per referral 💰
+
+🔗 Your Referral Link:
+${refLink}
+
+📌 Share this link and earn instantly!`
+  );
+});
+
+// 🎁 AUTO REWARD WHEN NEW USER JOINS
+bot.onText(/\/start (.+)/, (msg, match) => {
+  const id = msg.from.id;
+  const ref = match[1];
+
+  ensureUser(id);
+
+  // reward only if new user
+  if (ref && ref != id && users[ref]) {
+    if (!users[id].joined) {
+      users[id].joined = true;
+
+      users[ref].refs += 1;
+      users[ref].balance += 30;
+
+      bot.sendMessage(ref, `🎉 You earned ₹30 from referral!`);
+    }
+  }
+});
