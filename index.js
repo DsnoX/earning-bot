@@ -8,26 +8,41 @@ const app = express();
 
 // 🌐 Server
 app.get("/", (req, res) => res.send("Bot Running 🚀"));
-app.listen(3000);
+app.listen(3000, () => console.log("🌐 Server running on port 3000"));
 
-// 🧠 DB (LOAD/SAVE)
+// 🧠 DB
 let users = {};
 
+// Load users
 function loadUsers() {
-  if (fs.existsSync("users.json")) {
-    users = JSON.parse(fs.readFileSync("users.json"));
+  try {
+    if (fs.existsSync("users.json")) {
+      users = JSON.parse(fs.readFileSync("users.json"));
+    } else {
+      fs.writeFileSync("users.json", "{}");
+      users = {};
+    }
+  } catch (err) {
+    console.log("❌ Error loading users:", err);
+    users = {};
   }
 }
 loadUsers();
 
+// Save users
 function saveUsers() {
-  fs.writeFileSync("users.json", JSON.stringify(users, null, 2));
+  try {
+    fs.writeFileSync("users.json", JSON.stringify(users, null, 2));
+  } catch (err) {
+    console.log("❌ Error saving users:", err);
+  }
 }
 
-// ✅ Ensure user
+// Ensure user
 function ensureUser(id) {
   if (!users[id]) {
     users[id] = { balance: 0, refs: 0, joined: false };
+    console.log("✅ New User Added:", id);
     saveUsers();
   }
 }
@@ -45,7 +60,7 @@ function mainMenu() {
     reply_markup: {
       keyboard: [
         ["🎯 Earn Money"],
-        ["👥 Refer & Earn"], // ✅ FIXED
+        ["👥 Refer & Earn"],
         ["💰 Balance", "💸 Withdraw"]
       ],
       resize_keyboard: true
@@ -53,13 +68,16 @@ function mainMenu() {
   };
 }
 
-// 🔥 START + REFERRAL (MERGED FIXED)
+// 🔥 START + REFERRAL
 bot.onText(/\/start(?: (.+))?/, (msg, match) => {
   const id = msg.from.id;
   const ref = match[1];
 
+  console.log("🔥 START HIT:", id);
+
   ensureUser(id);
 
+  // Referral system
   if (ref && ref != id && users[ref]) {
     if (!users[id].joined) {
       users[id].joined = true;
@@ -96,24 +114,32 @@ bot.onText(/🎯 Earn Money/, (msg) => {
     `🔥 Featured Offers\n\nTap any offer 👇`,
     {
       reply_markup: {
-        inline_keyboard: offers.map(o => ([
-          { text: `💰 ₹${o.reward} - ${o.name}`, callback_data: `offer_${o.id}` }
-        ]))
+        inline_keyboard: [
+          ...offers.map(o => ([
+            { text: `💰 ₹${o.reward} - ${o.name}`, callback_data: `offer_${o.id}` }
+          ])),
+          [
+            { text: "🚧 Offer Coming Soon", callback_data: "coming_soon" }
+          ]
+        ]
       }
     }
   );
 });
 
-// 📄 OFFER DETAILS
+// 📄 CALLBACK HANDLER
 bot.on("callback_query", (q) => {
   const id = q.from.id;
   const data = q.data;
 
   ensureUser(id);
 
+  // Offer click
   if (data.startsWith("offer_")) {
     const offerId = parseInt(data.split("_")[1]);
     const offer = offers.find(o => o.id === offerId);
+
+    if (!offer) return;
 
     bot.sendMessage(id,
 `🔥 ${offer.name} - Earn ₹${offer.reward}
@@ -135,6 +161,11 @@ bot.on("callback_query", (q) => {
         }
       }
     );
+  }
+
+  // Coming soon button
+  if (data === "coming_soon") {
+    bot.sendMessage(id, "🚧 New offers coming soon... Stay tuned!");
   }
 });
 
@@ -167,11 +198,11 @@ bot.onText(/💸 Withdraw/, (msg) => {
             [{
               text: "📤 Share Now",
               switch_inline_query:
-`🔥 Found a simple way to earn online!
+`💸 Earn money easily using this app!
 
-I completed some basic tasks and already reached ₹300.
+I already earned from it 💰
 
-Join here 👇
+Join now 👇
 https://t.me/${process.env.BOT_USERNAME}?start=${id}`
             }]
           ]
@@ -183,22 +214,35 @@ https://t.me/${process.env.BOT_USERNAME}?start=${id}`
   bot.sendMessage(id, "📤 Withdraw request sent");
 });
 
-// 👥 REFER BUTTON
+// 👥 REFER & EARN
 bot.onText(/👥 Refer & Earn/, (msg) => {
   const id = msg.from.id;
   ensureUser(id);
 
   const refLink = `https://t.me/${process.env.BOT_USERNAME}?start=${id}`;
 
+  const text = `💸 Earn money easily using this app!
+
+I already earned from it 💰
+
+Join now 👇
+${refLink}`;
+
+  const shareUrl = `https://t.me/share/url?url=${refLink}&text=${encodeURIComponent(text)}`;
+
   bot.sendMessage(id,
 `👥 Refer & Earn
 
 Invite your friends and earn ₹30 per referral 💰
 
-🔗 Your Referral Link:
-${refLink}
-
-📌 Share this link and earn instantly!`
+👇 Share your link`,
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "📤 Share Now", url: shareUrl }]
+        ]
+      }
+    }
   );
 });
 
@@ -207,9 +251,11 @@ bot.onText(/\/share/, (msg) => {
   const id = msg.from.id;
 
   bot.sendMessage(msg.chat.id,
-`🔥 Found a simple way to earn online!
+`💸 Earn money easily using this app!
 
-Join here 👇
+I already earned from it 💰
+
+Join now 👇
 https://t.me/${process.env.BOT_USERNAME}?start=${id}`
   );
 });
