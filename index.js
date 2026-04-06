@@ -12,7 +12,7 @@ app.listen(3000);
 // 🧠 Simple DB
 let users = {};
 
-// 🎯 Offers (edit kar sakta hai)
+// 🎯 Offers
 const offers = [
   {
     id: 1,
@@ -40,7 +40,7 @@ bot.onText(/\/start(?: (.+))?/, (msg, match) => {
   const ref = match[1];
 
   if (!users[id]) {
-    users[id] = { balance: 0, done: [], refs: 0 };
+    users[id] = { balance: 0, refs: 0 };
 
     if (ref && ref != id && users[ref]) {
       users[ref].refs += 1;
@@ -48,7 +48,12 @@ bot.onText(/\/start(?: (.+))?/, (msg, match) => {
   }
 
   bot.sendMessage(id,
-    `👋 Welcome!\n\n💰 Earn money by completing simple tasks`,
+`👋 Welcome!
+
+💰 Earn money by completing simple tasks  
+⚡ Fast rewards & easy system  
+
+👇 Tap below to start`,
     mainMenu()
   );
 });
@@ -66,41 +71,84 @@ function mainMenu() {
   };
 }
 
-// 🎯 OFFERS SHOW
+// 🎯 SHOW OFFERS
 bot.onText(/🎯 Earn Money/, (msg) => {
   bot.sendMessage(msg.chat.id,
-    `🔥 Featured Offers\n\nTap & earn instantly 👇`,
+    `🔥 Featured Offers\n\nTap any offer to start earning 👇`,
     {
       reply_markup: {
         inline_keyboard: offers.map(o => ([
-          { text: `💰 ₹${o.reward} - ${o.name}`, url: o.link },
-          { text: "✅ Completed", callback_data: `done_${o.id}` }
+          { text: `💰 ₹${o.reward} - ${o.name}`, callback_data: `offer_${o.id}` }
         ]))
       }
     }
   );
 });
 
-// ✅ COMPLETE TASK
+// 📄 OFFER DETAILS PAGE
 bot.on("callback_query", (q) => {
   const id = q.from.id;
   const data = q.data;
 
   if (!users[id]) return;
 
-  if (data.startsWith("done_")) {
+  if (data.startsWith("offer_")) {
     const offerId = parseInt(data.split("_")[1]);
     const offer = offers.find(o => o.id === offerId);
 
-    if (users[id].done.includes(offerId)) {
-      return bot.answerCallbackQuery(q.id, { text: "Already done ❌" });
+    let message = "";
+
+    // 🔥 Slice Offer (Custom)
+    if (offer.id === 1) {
+      message =
+`🔥 Slice Offer - Earn ₹${offer.reward}
+
+💳 Switched to slice for daily banking.
+
+Get upto 3% cashback even on a ₹10 chai ☕  
+Plus daily interest at 100% repo rate on savings.  
+No fees or minimum balance.
+
+🎁 Offer Details:
+• Sign up using referral code  
+• Complete your first UPI payment  
+• Get ₹250 cashback 💰
+
+🔑 Promo Code: DSNOX46416
+
+📋 Steps:
+1️⃣ Click on "Open Offer"  
+2️⃣ Install the app  
+3️⃣ Sign up using same number  
+4️⃣ Enter promo code  
+5️⃣ Complete first UPI payment  
+
+⚡ Reward: ₹${offer.reward}
+
+👇 Click below to start`;
+    } else {
+      // 🔹 Default Offers
+      message =
+`🔥 ${offer.name} - Earn ₹${offer.reward}
+
+📋 How to complete this task:
+
+1️⃣ Click on "Open Offer"  
+2️⃣ Install the app  
+3️⃣ Create your account  
+4️⃣ Complete required steps  
+
+⚡ Reward: ₹${offer.reward}
+
+👇 Click below to start`;
     }
 
-    users[id].done.push(offerId);
-    users[id].balance += offer.reward;
-
-    bot.answerCallbackQuery(q.id, {
-      text: `✅ ₹${offer.reward} added`
+    bot.sendMessage(id, message, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🚀 Open Offer", url: offer.link }]
+        ]
+      }
     });
   }
 });
@@ -125,14 +173,14 @@ bot.onText(/💸 Withdraw/, (msg) => {
 
   if (users[id].refs < 4) {
     return bot.sendMessage(id,
-      `⚠️ Withdraw unlock karne ke liye:\n\n` +
-      `👉 4 friends invite karo\n\n👇 Share below`,
+      `⚠️ Withdraw unlock karne ke liye:\n\n👉 Invite 4 friends\n\n👇 Share below`,
       {
         reply_markup: {
           inline_keyboard: [
             [{
-              text: "🔗 Invite Friends",
-              url: `https://t.me/${process.env.BOT_USERNAME}?start=${id}`
+              text: "📤 Share Now",
+              switch_inline_query:
+              "🔥 Found a simple way to earn online!\n\nI completed some basic tasks and already reached ₹300.\nProcess is easy and beginner-friendly.\n\nIf you want to try, join here 👇\nhttps://t.me/YOUR_BOT_USERNAME"
             }]
           ]
         }
@@ -145,10 +193,10 @@ bot.onText(/💸 Withdraw/, (msg) => {
   );
 });
 
-// 📢 FORWARD MESSAGE
+// 📢 SHARE COMMAND
 bot.onText(/\/share/, (msg) => {
   bot.sendMessage(msg.chat.id,
-    `🔥Found a simple way to earn online!\n\n` +
+    `🔥 Found a simple way to earn online!\n\n` +
     `I completed some basic tasks and already reached ₹300.\n` +
     `Process is easy and beginner-friendly.\n\n` +
     `If you want to try, join here 👇\n` +
