@@ -12,6 +12,13 @@ app.listen(3000);
 // 🧠 Simple DB
 let users = {};
 
+// ✅ Ensure user exists
+function ensureUser(id) {
+  if (!users[id]) {
+    users[id] = { balance: 0, refs: 0 };
+  }
+}
+
 // 🎯 Offers
 const offers = [
   {
@@ -23,13 +30,13 @@ const offers = [
   {
     id: 2,
     name: "TaskBucks",
-    reward: 50,
+    reward: 70,
     link: "http://tbk.bz/jf3gjkc9"
   },
   {
     id: 3,
     name: "Upstox",
-    reward: 120,
+    reward: 110,
     link: "https://upstox.onelink.me/0H1s/5GCLUE"
   }
 ];
@@ -39,12 +46,10 @@ bot.onText(/\/start(?: (.+))?/, (msg, match) => {
   const id = msg.from.id;
   const ref = match[1];
 
-  if (!users[id]) {
-    users[id] = { balance: 0, refs: 0 };
+  ensureUser(id);
 
-    if (ref && ref != id && users[ref]) {
-      users[ref].refs += 1;
-    }
+  if (ref && ref != id && users[ref]) {
+    users[ref].refs += 1;
   }
 
   bot.sendMessage(id,
@@ -85,12 +90,12 @@ bot.onText(/🎯 Earn Money/, (msg) => {
   );
 });
 
-// 📄 OFFER DETAILS PAGE
+// 📄 OFFER DETAILS
 bot.on("callback_query", (q) => {
   const id = q.from.id;
   const data = q.data;
 
-  if (!users[id]) return;
+  ensureUser(id);
 
   if (data.startsWith("offer_")) {
     const offerId = parseInt(data.split("_")[1]);
@@ -98,7 +103,6 @@ bot.on("callback_query", (q) => {
 
     let message = "";
 
-    // 🔥 Slice Offer (Custom)
     if (offer.id === 1) {
       message =
 `🔥 Slice Offer - Earn ₹${offer.reward}
@@ -127,7 +131,6 @@ No fees or minimum balance.
 
 👇 Click below to start`;
     } else {
-      // 🔹 Default Offers
       message =
 `🔥 ${offer.name} - Earn ₹${offer.reward}
 
@@ -156,6 +159,7 @@ No fees or minimum balance.
 // 💰 BALANCE
 bot.onText(/💰 Balance/, (msg) => {
   const id = msg.from.id;
+  ensureUser(id);
 
   bot.sendMessage(id,
     `💰 Balance: ₹${users[id].balance}\n👥 Referrals: ${users[id].refs}`,
@@ -166,6 +170,7 @@ bot.onText(/💰 Balance/, (msg) => {
 // 💸 WITHDRAW
 bot.onText(/💸 Withdraw/, (msg) => {
   const id = msg.from.id;
+  ensureUser(id);
 
   if (users[id].balance < 300) {
     return bot.sendMessage(id, "❌ Minimum ₹300 required");
@@ -180,7 +185,13 @@ bot.onText(/💸 Withdraw/, (msg) => {
             [{
               text: "📤 Share Now",
               switch_inline_query:
-              "🔥 Found a simple way to earn online!\n\nI completed some basic tasks and already reached ₹300.\nProcess is easy and beginner-friendly.\n\nIf you want to try, join here 👇\nhttps://t.me/YOUR_BOT_USERNAME"
+              `🔥 Found a simple way to earn online!
+
+I completed some basic tasks and already reached ₹300.
+Process is easy and beginner-friendly.
+
+If you want to try, join here 👇
+https://t.me/${process.env.BOT_USERNAME}?start=${id}`
             }]
           ]
         }
@@ -195,11 +206,15 @@ bot.onText(/💸 Withdraw/, (msg) => {
 
 // 📢 SHARE COMMAND
 bot.onText(/\/share/, (msg) => {
+  const id = msg.from.id;
+
   bot.sendMessage(msg.chat.id,
-    `🔥 Found a simple way to earn online!\n\n` +
-    `I completed some basic tasks and already reached ₹300.\n` +
-    `Process is easy and beginner-friendly.\n\n` +
-    `If you want to try, join here 👇\n` +
-    `https://t.me/${process.env.BOT_USERNAME}`
+    `🔥 Found a simple way to earn online!
+
+I completed some basic tasks and already reached ₹300.
+Process is easy and beginner-friendly.
+
+If you want to try, join here 👇
+https://t.me/${process.env.BOT_USERNAME}?start=${id}`
   );
-});
+});: 
