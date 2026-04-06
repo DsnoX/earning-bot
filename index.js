@@ -1,6 +1,7 @@
 require("dotenv").config();
 const TelegramBot = require("node-telegram-bot-api");
 const express = require("express");
+const fs = require("fs");
 
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 const app = express();
@@ -9,24 +10,50 @@ const app = express();
 app.get("/", (req, res) => res.send("Bot Running 🚀"));
 app.listen(3000);
 
-// 🧠 DB
+// 🧠 DB (LOAD/SAVE)
 let users = {};
+
+function loadUsers() {
+  if (fs.existsSync("users.json")) {
+    users = JSON.parse(fs.readFileSync("users.json"));
+  }
+}
+loadUsers();
+
+function saveUsers() {
+  fs.writeFileSync("users.json", JSON.stringify(users, null, 2));
+}
 
 // ✅ Ensure user
 function ensureUser(id) {
   if (!users[id]) {
-    users[id] = { balance: 0, refs: 0 };
+    users[id] = { balance: 0, refs: 0, joined: false };
+    saveUsers();
   }
 }
 
-// 🎯 Offers (FINAL RATES)
+// 🎯 Offers
 const offers = [
   { id: 1, name: "Slice Offer", reward: 150, link: "https://t.sliceit.com/s?c=irYwC_h&ic=DSNOX46416" },
   { id: 2, name: "TaskBucks", reward: 70, link: "http://tbk.bz/jf3gjkc9" },
   { id: 3, name: "Upstox", reward: 110, link: "https://upstox.onelink.me/0H1s/5GCLUE" }
 ];
 
-// 🔥 START
+// 📱 MENU
+function mainMenu() {
+  return {
+    reply_markup: {
+      keyboard: [
+        ["🎯 Earn Money"],
+        ["👥 Refer & Earn"], // ✅ FIXED
+        ["💰 Balance", "💸 Withdraw"]
+      ],
+      resize_keyboard: true
+    }
+  };
+}
+
+// 🔥 START + REFERRAL (MERGED FIXED)
 bot.onText(/\/start(?: (.+))?/, (msg, match) => {
   const id = msg.from.id;
   const ref = match[1];
@@ -34,7 +61,16 @@ bot.onText(/\/start(?: (.+))?/, (msg, match) => {
   ensureUser(id);
 
   if (ref && ref != id && users[ref]) {
-    users[ref].refs += 1;
+    if (!users[id].joined) {
+      users[id].joined = true;
+
+      users[ref].refs += 1;
+      users[ref].balance += 30;
+
+      saveUsers();
+
+      bot.sendMessage(ref, `🎉 You earned ₹30 from referral!`);
+    }
   }
 
   bot.sendMessage(id,
@@ -53,19 +89,6 @@ Earn money by completing simple tasks.
     mainMenu()
   );
 });
-
-// 📱 MENU
-function mainMenu() {
-  return {
-    reply_markup: {
-      keyboard: [
-        ["🎯 Earn Money"],
-        ["💰 Balance", "💸 Withdraw"]
-      ],
-      resize_keyboard: true
-    }
-  };
-}
 
 // 🎯 OFFERS
 bot.onText(/🎯 Earn Money/, (msg) => {
@@ -160,54 +183,6 @@ https://t.me/${process.env.BOT_USERNAME}?start=${id}`
   bot.sendMessage(id, "📤 Withdraw request sent");
 });
 
-// 📢 SHARE
-bot.onText(/\/share/, (msg) => {
-  const id = msg.from.id;
-
-  bot.sendMessage(msg.chat.id,
-`🔥 Found a simple way to earn online!
-
-I completed some basic tasks and already reached ₹300.
-
-Join here 👇
-https://t.me/${process.env.BOT_USERNAME}?start=${id}`
-  );
-});
-
-// 🔥 FAKE + REAL USER SYSTEM
-
-let fakeUsers = 12483; // fake number (change kar sakta hai)
-const adminId = 8413604187; // 👈 apna Telegram ID daal
-
-bot.onText(/\/stats/, (msg) => {
-  const id = msg.from.id;
-  const realUsers = Object.keys(users).length;
-
-  // 👑 AGAR TU (ADMIN)
-  if (id === adminId) {
-    bot.sendMessage(id,
-      `📊 Real Users: ${realUsers}`
-    );
-  } 
-  // 👥 NORMAL USER
-  else {
-    const totalUsers = fakeUsers + realUsers;
-
-    bot.sendMessage(id,
-      `👥 Total Users: ${totalUsers.toLocaleString()}`
-    );
-  }
-});
-
-// 🔥 REFER SYSTEM AUTO ₹30 (NO CHANGE NEEDED ABOVE)
-
-// ensure user exists
-function ensureUser(id) {
-  if (!users[id]) {
-    users[id] = { balance: 0, refs: 0 };
-  }
-}
-
 // 👥 REFER BUTTON
 bot.onText(/👥 Refer & Earn/, (msg) => {
   const id = msg.from.id;
@@ -227,22 +202,30 @@ ${refLink}
   );
 });
 
-// 🎁 AUTO REWARD WHEN NEW USER JOINS
-bot.onText(/\/start (.+)/, (msg, match) => {
+// 📢 SHARE COMMAND
+bot.onText(/\/share/, (msg) => {
   const id = msg.from.id;
-  const ref = match[1];
 
-  ensureUser(id);
+  bot.sendMessage(msg.chat.id,
+`🔥 Found a simple way to earn online!
 
-  // reward only if new user
-  if (ref && ref != id && users[ref]) {
-    if (!users[id].joined) {
-      users[id].joined = true;
+Join here 👇
+https://t.me/${process.env.BOT_USERNAME}?start=${id}`
+  );
+});
 
-      users[ref].refs += 1;
-      users[ref].balance += 30;
+// 📊 STATS
+let fakeUsers = 12483;
+const adminId = 8413604187;
 
-      bot.sendMessage(ref, `🎉 You earned ₹30 from referral!`);
-    }
+bot.onText(/\/stats/, (msg) => {
+  const id = msg.from.id;
+  const realUsers = Object.keys(users).length;
+
+  if (id === adminId) {
+    bot.sendMessage(id, `📊 Real Users: ${realUsers}`);
+  } else {
+    const totalUsers = fakeUsers + realUsers;
+    bot.sendMessage(id, `👥 Total Users: ${totalUsers.toLocaleString()}`);
   }
 });
