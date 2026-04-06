@@ -5,43 +5,28 @@ const express = require("express");
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 const app = express();
 
-// 🌐 Uptime server
+// 🌐 Server
 app.get("/", (req, res) => res.send("Bot Running 🚀"));
 app.listen(3000);
 
-// 🧠 Simple DB
+// 🧠 DB
 let users = {};
 
-// ✅ Ensure user exists
+// ✅ Ensure user
 function ensureUser(id) {
   if (!users[id]) {
     users[id] = { balance: 0, refs: 0 };
   }
 }
 
-// 🎯 Offers
+// 🎯 Offers (FINAL RATES)
 const offers = [
-  {
-    id: 1,
-    name: "Slice Offer",
-    reward: 150,
-    link: "https://t.sliceit.com/s?c=irYwC_h&ic=DSNOX46416"
-  },
-  {
-    id: 2,
-    name: "TaskBucks",
-    reward: 70,
-    link: "http://tbk.bz/jf3gjkc9"
-  },
-  {
-    id: 3,
-    name: "Upstox",
-    reward: 110,
-    link: "https://upstox.onelink.me/0H1s/5GCLUE"
-  }
+  { id: 1, name: "Slice Offer", reward: 150, link: "https://t.sliceit.com/s?c=irYwC_h&ic=DSNOX46416" },
+  { id: 2, name: "TaskBucks", reward: 70, link: "http://tbk.bz/jf3gjkc9" },
+  { id: 3, name: "Upstox", reward: 110, link: "https://upstox.onelink.me/0H1s/5GCLUE" }
 ];
 
-// 🔥 START + REFERRAL
+// 🔥 START
 bot.onText(/\/start(?: (.+))?/, (msg, match) => {
   const id = msg.from.id;
   const ref = match[1];
@@ -55,10 +40,16 @@ bot.onText(/\/start(?: (.+))?/, (msg, match) => {
   bot.sendMessage(id,
 `👋 Welcome!
 
-💰 Earn money by completing simple tasks  
-⚡ Fast rewards & easy system  
+Earn money by completing simple tasks.
 
-👇 Tap below to start`,
+📌 How it works:
+• Complete tasks  
+• Follow steps  
+• Earn rewards  
+
+💰 You can earn ₹10,000 to ₹12,000 per month.
+
+👇 Use menu below`,
     mainMenu()
   );
 });
@@ -76,10 +67,10 @@ function mainMenu() {
   };
 }
 
-// 🎯 SHOW OFFERS
+// 🎯 OFFERS
 bot.onText(/🎯 Earn Money/, (msg) => {
   bot.sendMessage(msg.chat.id,
-    `🔥 Featured Offers\n\nTap any offer to start earning 👇`,
+    `🔥 Featured Offers\n\nTap any offer 👇`,
     {
       reply_markup: {
         inline_keyboard: offers.map(o => ([
@@ -101,58 +92,26 @@ bot.on("callback_query", (q) => {
     const offerId = parseInt(data.split("_")[1]);
     const offer = offers.find(o => o.id === offerId);
 
-    let message = "";
-
-    if (offer.id === 1) {
-      message =
-`🔥 Slice Offer - Earn ₹${offer.reward}
-
-💳 Switched to slice for daily banking.
-
-Get upto 3% cashback even on a ₹10 chai ☕  
-Plus daily interest at 100% repo rate on savings.  
-No fees or minimum balance.
-
-🎁 Offer Details:
-• Sign up using referral code  
-• Complete your first UPI payment  
-• Get ₹250 cashback 💰
-
-🔑 Promo Code: DSNOX46416
-
-📋 Steps:
-1️⃣ Click on "Open Offer"  
-2️⃣ Install the app  
-3️⃣ Sign up using same number  
-4️⃣ Enter promo code  
-5️⃣ Complete first UPI payment  
-
-⚡ Reward: ₹${offer.reward}
-
-👇 Click below to start`;
-    } else {
-      message =
+    bot.sendMessage(id,
 `🔥 ${offer.name} - Earn ₹${offer.reward}
 
-📋 How to complete this task:
-
-1️⃣ Click on "Open Offer"  
-2️⃣ Install the app  
-3️⃣ Create your account  
-4️⃣ Complete required steps  
+📋 Steps:
+1️⃣ Open offer  
+2️⃣ Install app  
+3️⃣ Signup  
+4️⃣ Complete steps  
 
 ⚡ Reward: ₹${offer.reward}
 
-👇 Click below to start`;
-    }
-
-    bot.sendMessage(id, message, {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "🚀 Open Offer", url: offer.link }]
-        ]
+👇 Start now`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "🚀 Open Offer", url: offer.link }]
+          ]
+        }
       }
-    });
+    );
   }
 });
 
@@ -178,19 +137,18 @@ bot.onText(/💸 Withdraw/, (msg) => {
 
   if (users[id].refs < 4) {
     return bot.sendMessage(id,
-      `⚠️ Withdraw unlock karne ke liye:\n\n👉 Invite 4 friends\n\n👇 Share below`,
+      `⚠️ Invite 4 friends to unlock withdrawal`,
       {
         reply_markup: {
           inline_keyboard: [
             [{
               text: "📤 Share Now",
               switch_inline_query:
-              `🔥 Found a simple way to earn online!
+`🔥 Found a simple way to earn online!
 
 I completed some basic tasks and already reached ₹300.
-Process is easy and beginner-friendly.
 
-If you want to try, join here 👇
+Join here 👇
 https://t.me/${process.env.BOT_USERNAME}?start=${id}`
             }]
           ]
@@ -199,22 +157,19 @@ https://t.me/${process.env.BOT_USERNAME}?start=${id}`
     );
   }
 
-  bot.sendMessage(id,
-    `📤 Withdraw request received\n\n⏳ Processing...`
-  );
+  bot.sendMessage(id, "📤 Withdraw request sent");
 });
 
-// 📢 SHARE COMMAND
+// 📢 SHARE
 bot.onText(/\/share/, (msg) => {
   const id = msg.from.id;
 
   bot.sendMessage(msg.chat.id,
-    `🔥 Found a simple way to earn online!
+`🔥 Found a simple way to earn online!
 
 I completed some basic tasks and already reached ₹300.
-Process is easy and beginner-friendly.
 
-If you want to try, join here 👇
+Join here 👇
 https://t.me/${process.env.BOT_USERNAME}?start=${id}`
   );
-});: 
+});
