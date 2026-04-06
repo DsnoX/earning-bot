@@ -17,19 +17,19 @@ const offers = [
   {
     id: 1,
     name: "Slice Offer",
-    reward: 10,
+    reward: 150,
     link: "https://t.sliceit.com/s?c=irYwC_h&ic=DSNOX46416"
   },
   {
     id: 2,
     name: "TaskBucks",
-    reward: 10,
+    reward: 50,
     link: "http://tbk.bz/jf3gjkc9"
   },
   {
     id: 3,
     name: "Upstox",
-    reward: 10,
+    reward: 120,
     link: "https://upstox.onelink.me/0H1s/5GCLUE"
   }
 ];
